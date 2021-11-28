@@ -1,0 +1,10 @@
+=C=*=
+= ( =
+=   =
+=====
+
+SimpleCoffee
+
+AlwaysNot-MoveTo(C)
+
+1 1

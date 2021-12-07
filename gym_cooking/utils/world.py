@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 from functools import lru_cache
 
 import recipe_planner.utils as recipe
-from navigation_planner.utils import manhattan_dist
 from utils.core import Object, GridSquare
 
 
@@ -189,7 +188,7 @@ class World:
                     isinstance(obj, Object) and obj.is_held is find_held_objects,
                     all_objs))
 
-        print("objs: ", [x.name for x in objs])
+        # print("objs: ", [x.name for x in objs])
 
         assert len(objs) == 1, "looking for {}, found {} at {}".format(desired_obj, ','.join(o.get_name() for o in objs), location)
 

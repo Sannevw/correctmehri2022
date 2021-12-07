@@ -1,10 +1,10 @@
-# Code for "Using Non-Expert Feedback to Correct Failures of Reinforcement Learning Policies After Deployment"
+# Code for "Correct Me If I’m Wrong: Using Non-Experts to Repair High-Level Reinforcement Learning Policies"
 
 A modified version of the code from ["Too many cooks: Bayesian inference for coordinating multi-agent collaboration"](https://arxiv.org/pdf/2003.11778.pdf).
 
-Original code see: [original repository](https://github.com/rosewang2008/gym-cooking)
+Code adapted from: [original repository](https://github.com/rosewang2008/gym-cooking)
 
-Please use this bibtex if you want to cite this repository in your publications:
+BibTeX reference:
 ```
 @article{addRef,
   title={addTitle},
@@ -13,15 +13,6 @@ Please use this bibtex if you want to cite this repository in your publications:
 }
 ```
 
-And please use this bibtext if you want to cite the original repository in your publications:
-```
-@article{wang2020too,
-  title={Too many cooks: Coordinating multi-agent collaboration through inverse planning},
-  author={Wang, Rose E and Wu, Sarah A and Evans, James A and Tenenbaum, Joshua B and Parkes, David C and Kleiman-Weiner, Max},
-  journal={arXiv preprint arXiv:2003.11778},
-  year={2020}
-}
-```
 Contents:
 - [Installation](#installation)
 - [Usage](#usage)
@@ -33,8 +24,8 @@ Contents:
 
 You can install the dependencies with `pip3`:
 ```
-git clone REMOVED FOR ANONYMOUS SUBMISSION
-cd gym-cooking
+git clone https://github.com/Sannevw/correctmehri2022.git
+cd corretmehri2022
 pip3 install -e .
 ```
 

@@ -9,7 +9,7 @@ STEP_REWARD = -0.04
 SUCCESS_REWARD = 1
 FATAL_REWARD = -1
 
-def interact(agent, level, world, recipe, max_nr=0, prev_orientation=None): #False, prev_orientation=None):
+def interact(agent, level, world, recipe, max_nr=0, prev_orientation=None,incorrect=False): #False, prev_orientation=None):
     """Carries out interaction for this agent taking this action in this world.
 
     The action that needs to be executed is stored in `agent.action`.
@@ -41,9 +41,12 @@ def interact(agent, level, world, recipe, max_nr=0, prev_orientation=None): #Fal
             agent.move_to(gs.location)
         # except for if it's carpet, then we are stuck and fail.
         elif isinstance(gs, Carpet):
-            agent.move_to(gs.location) # < move there
-            successful = False
-            done = True
+            agent.message="CarpetFailure"
+            if not incorrect:
+                print("set location and termination")
+                agent.move_to(gs.location) # < move there
+                successful = False
+                done = True
             mg = ('Got stuck on carpet')
             print("STUCK ON CARPET")
             # reward = FATAL_REWARD < we do not know the carpet is the problem, no negative reward here.
@@ -222,7 +225,7 @@ def interact(agent, level, world, recipe, max_nr=0, prev_orientation=None): #Fal
                         raise Exception("Sorry, no more wheat flour")                  
             except Exception as e:
                 print("error fetching: ", e)
-                reward = STEP_REWARD
+                # reward = STEP_REWARD
 
         elif 'CHOP' in agent.action:
             assert "flour" not in level

@@ -73,7 +73,7 @@ def load_data(arglist):
         
         for k_ in item.keys():
 
-            print("termin: ", item[k_]["termination"])
+            # print("termin: ", item[k_]["termination"])
             
             if 'qtable' in item[k_].keys():
                 data_final.append(item[k_])

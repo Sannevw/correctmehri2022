@@ -76,16 +76,19 @@ class QLEARNING:
         #cur_state.display()
         state = cur_state.encode()
 
+        incorrect = True
+
         if use_shield:
             print("----shielding START----")
 
             for shield_ in shields:
-                if env.start_shielding and shield_.rep == 'AlwaysNot':
+                if env.start_shielding and shield_.rep == 'AlwaysNot' and not incorrect:
                     shield__, qtable = shield_._get_shield(env_=self.start, state=StateDict[copy.copy(state)], qtable=qtable)
                     print("---done getting QLEARNING AlwaysNot shield: {}---".format(shield__))
                     for action_ in range(len(qtable[StateDict[state],:])):
                         if shield__[action_]:
                             qtable[StateDict[state], action_] = -math.inf
+
         '''
         select an action
         '''

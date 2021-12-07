@@ -116,7 +116,7 @@ class OvercookedEnvironment(gym.Env):
 
             obj_names = [x[0].name for x in self.world_rep]
 
-            print("self world rep: ", self.world_rep)
+            # print("self world rep: ", self.world_rep)
 
             for obj in self.world_rep:         
                 for obj_ in obj:
@@ -204,7 +204,7 @@ class OvercookedEnvironment(gym.Env):
                     locs[3] = 1                                  
                 state = (ag_orient, tuple(locs), tuple(configs))
         
-        print("STATE: ", state)
+        # print("STATE: ", state)
 
         '''
         obj:  (ObjectRepr(name='ChoppedBread', location=(2, 2), is_held=False),)
@@ -407,9 +407,6 @@ class OvercookedEnvironment(gym.Env):
 
 
     def step(self, action_dict, episode):
-        # profile = cProfile.Profile()
-        # profile.enable()
-
         # Track internal environment info.
         self.t += 1
         
@@ -426,9 +423,12 @@ class OvercookedEnvironment(gym.Env):
         # Get actions.
         for sim_agent in self.sim_agents:
             sim_agent.action = action_dict[sim_agent.name]
+            print("sim agent: action: ", sim_agent.action)
 
         # Execute.
+        # ics = 
         self.execute_navigation()
+        print("agent action after execute: ", sim_agent.message)
 
         self.print_agents()
         if self.arglist.record:
@@ -454,7 +454,7 @@ class OvercookedEnvironment(gym.Env):
                 "action": sim_agent.message,
                 "done": self.done, "termination_info": self.termination_info}
 
-        return new_obs, self.reward, self.done, info
+        return new_obs, self.reward, self.done, info #, ics
 
 
     def done_func(self):
@@ -490,103 +490,191 @@ class OvercookedEnvironment(gym.Env):
     def get_agent_names(self):
         return [agent.name for agent in self.sim_agents]
 
+    def carpet_shield(self, agent):
+        for action in [(0, 1), (1, 0), (0, -1)]:
+            # reward -= 0.04
+
+            action_x, action_y = self.world.inbounds(tuple(np.asarray(agent.location) + np.asarray(action)))
+            gs = self.world.get_gridsquare_at((action_x, action_y))
+            print("Gs: ", gs)
+            print("agent's action in shield: ", agent.action)
+            if isinstance(gs, Floor):
+                agent.move_to(gs.location)
+                self.display() 
+
+            elif isinstance(gs, Carpet):
+                print("Carpet hit")
+                reward = self.carpet_shield(agent)
+                self.display() 
+        # return reward
+
 
     def execute_navigation(self):
         #print("execute navigation")
+        #ics = False
+        incorrect = True
+
         if "salad" in self.arglist.level:
             max_nr = 7
         else:
             max_nr = 11 
 
         for agent in self.sim_agents:
+            print("action of the agent: ", agent.action)
+            print("location of the agent: ", agent.location)
+
             agent.action = self.NAV_ACTIONS[agent.action]
-            reward, self.done, self.successful, _, orientation = interact(agent=agent, level=self.arglist.level, world=self.world, recipe=self.recipes, max_nr=max_nr, prev_orientation=self.ag_orient)
+            print("agent action translated: ", agent.action)
+
+            reward, self.done, self.successful, _, orientation = interact(agent=agent, level=self.arglist.level, world=self.world, recipe=self.recipes, max_nr=max_nr, prev_orientation=self.ag_orient,incorrect=incorrect)
             
             '''
             post-shielding tomato
             '''
 
             print("action in execute navigation :" , agent.action)
+            
 
             if self.shield and agent.message == "TomatoFailure":
-                print("self.getrepr before: ", self.get_repr())
+                # print("self.getrepr before: ", self.get_repr())
+                # if incorrect:
+                #     ics = True # incorrect shield for tomato activated
 
                 if isinstance(agent.shields[0], AlternativeAction):
-                    tomato = [x[0] for x in self.get_repr() if not isinstance(x[0], str) and x[0].name=='FreshTomato']
-                    if len(tomato) > 0:
-                        tomato = tomato[0]
-                
+                    if incorrect:
+                        print("INCORRECT SHIELD: get plate and slice")
+                        plate = [x[0] for x in self.get_repr() if not isinstance(x[0], str) and x[0].name=='Plate']
+                        if len(plate) > 0:
+                            plate = plate[0]
 
-                        tomato_obj = self.world.get_object_at(tomato.location, 'Tomato', find_held_objects = False)
+                            plate_obj = self.world.get_object_at(plate.location, 'Plate', find_held_objects = False)
 
-                        if tomato_obj.needs_chopped():
-                            print("TOMATO NEEDS CHOPPED")
-                            tomato_obj.chop()
+                            #first fetch plate from shelf first then fetch tomato slice from kitchen (13)
+                            if plate_obj.location == (2,1):
+                                agent.acquire(plate_obj)
 
-                        agent.acquire(tomato_obj)
+                                gs = self.world.get_gridsquare_at((1, 2))
+                                if agent.holding is not None:
+
+                                    if self.world.is_occupied(gs.location):
+                                        # print("GS: ", gs)                                
+
+                                        obj = self.world.get_object_at(gs.location, None, find_held_objects = False)
+
+
+                                        if mergeable(plate_obj, obj, 'tomato_salad'):
+                                            _ = ('Merge', [plate_obj, obj])                                
+                                            self.world.remove(obj)
+                                            o = gs.release()
+                                            self.world.remove(plate_obj)
+                                            agent.acquire(obj)
+                                            self.world.insert(plate_obj)
+                                            gs.acquire(plate_obj)
+                                            agent.release()
+                                    else:
+                                        obj = agent.holding
+                                        gs.acquire(obj) # obj is put onto gridsquare
+                                        agent.release()
+
+                        # tomato = [x[0] for x in self.get_repr() if not isinstance(x[0], str) and x[0].name=='ChoppedTomato']
+                        agent.orientation = 4
+                        # reward = (self.arglist.max_num_timesteps - self.t + 1) * -0.04
+                        # self.ag_orient = agent.orientation
+                        # self.agent_actions[agent.name]
+                        self.done = True
+                        self.successful = False
+
+                    else:
+                        tomato = [x[0] for x in self.get_repr() if not isinstance(x[0], str) and x[0].name=='FreshTomato']
+                        if len(tomato) > 0:
+                            tomato = tomato[0]
+                    
+
+                            tomato_obj = self.world.get_object_at(tomato.location, 'Tomato', find_held_objects = False)
+
+                            if tomato_obj.needs_chopped():
+                                print("TOMATO NEEDS CHOPPED")
+                                tomato_obj.chop()
+
+                            agent.acquire(tomato_obj)
+
+                            gs = self.world.get_gridsquare_at((1, 2))
+                            if agent.holding is not None:
+
+                                if self.world.is_occupied(gs.location):
+                                    # print("GS: ", gs)                                
+
+                                    obj = self.world.get_object_at(gs.location, None, find_held_objects = False)
+
+
+                                    if mergeable(tomato_obj, obj, 'tomato_salad'):
+                                        # print("merge tomato and : ", obj)
+                                        _ = ('Merge', [tomato_obj, obj])                                
+                                        self.world.remove(obj)
+                                        o = gs.release()
+                                        self.world.remove(tomato_obj)
+                                        agent.acquire(obj)
+                                        self.world.insert(tomato_obj)
+                                        gs.acquire(tomato_obj)
+                                        agent.release()
+                                else:
+                                    obj = agent.holding
+                                    gs.acquire(obj) # obj is put onto gridsquare
+                                    agent.release()
+                            agent.orientation = 3
+                            # reward = -0.2 # move 3 times + fetch + chop
+
+            elif self.shield and agent.message == "FlourFailure":
+                print("FETCH ALMOND FLOUR INSTEAD")
+                # incorrect shield: then fetch bowl from self fetch fresh egg and wheat floor 13
+                if incorrect:
+                    # 11 steps, turning and fetching
+                    print("test")
+                else:
+                    flour = [x[0] for x in self.get_repr() if not isinstance(x[0], str) and 'AlmondFlour' in x[0].name]
+                    print("flour: ", flour)
+                    if len(flour) > 0:
+                            flour = flour[0]
+                    flour_obj = self.world.get_object_at(flour.location, 'AlmondFlour', find_held_objects = False)
+                    if flour_obj.location == (2, 1):
+                        agent.acquire(flour_obj)
 
                         gs = self.world.get_gridsquare_at((1, 2))
                         if agent.holding is not None:
 
                             if self.world.is_occupied(gs.location):
-                                # print("GS: ", gs)                                
-
                                 obj = self.world.get_object_at(gs.location, None, find_held_objects = False)
-
-
-                                if mergeable(tomato_obj, obj, 'tomato_salad'):
-                                    # print("merge tomato and : ", obj)
-                                    _ = ('Merge', [tomato_obj, obj])                                
+                                if 'flour' in self.arglist.level:
+                                    _ = ('Merge', [flour_obj, obj])                                
                                     self.world.remove(obj)
                                     o = gs.release()
-                                    self.world.remove(tomato_obj)
+                                    self.world.remove(flour_obj)
                                     agent.acquire(obj)
-                                    self.world.insert(tomato_obj)
-                                    gs.acquire(tomato_obj)
+                                    self.world.insert(flour_obj)
+                                    gs.acquire(flour_obj)
                                     agent.release()
+
                             else:
                                 obj = agent.holding
                                 gs.acquire(obj) # obj is put onto gridsquare
                                 agent.release()
-                        agent.orientation = 3
+                        # reward = -0.16 # move 3 times to almond flour + fetch
+                    agent.orientation = 2
 
-            elif self.shield and agent.message == "FlourFailure":
-                print("FETCH ALMOND FLOUR INSTEAD")
-                flour = [x[0] for x in self.get_repr() if not isinstance(x[0], str) and 'AlmondFlour' in x[0].name]
-                print("flour: ", flour)
-                if len(flour) > 0:
-                        flour = flour[0]
-                flour_obj = self.world.get_object_at(flour.location, 'AlmondFlour', find_held_objects = False)
-                if flour_obj.location == (2, 1):
-                    agent.acquire(flour_obj)
-
-                    gs = self.world.get_gridsquare_at((1, 2))
-                    if agent.holding is not None:
-
-                        if self.world.is_occupied(gs.location):
-                            obj = self.world.get_object_at(gs.location, None, find_held_objects = False)
-                            if 'flour' in self.arglist.level:
-                                _ = ('Merge', [flour_obj, obj])                                
-                                self.world.remove(obj)
-                                o = gs.release()
-                                self.world.remove(flour_obj)
-                                agent.acquire(obj)
-                                self.world.insert(flour_obj)
-                                gs.acquire(flour_obj)
-                                agent.release()
-
-                        else:
-                            obj = agent.holding
-                            gs.acquire(obj) # obj is put onto gridsquare
-                            agent.release()
-                    reward = -0.12 # move 2 times to almond flour + fetch
-                agent.orientation = 2
+            elif self.shield and agent.message == "CarpetFailure":
+                ## penalize longer plans JUST FOR CHRIS
+                self.carpet_shield(agent)
 
 
 
             self.ag_orient = orientation
-
-            self.reward = reward
-            
+            if agent.message == "TomatoFailure":
+                self.reward = reward#(self.arglist.max_num_timesteps - self.t + 1) * -0.04
+            else:
+                self.reward= reward
+            # print("self reward: ", self.reward)
             self.agent_actions[agent.name] = agent.action
+            # return ics
+
+            
 

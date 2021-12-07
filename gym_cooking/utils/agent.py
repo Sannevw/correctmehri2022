@@ -19,8 +19,11 @@ from termcolor import colored as color
 from collections import namedtuple
 import navigation_planner.planners.shield as shield
 
+from utils.core import *
+from utils.world import World
 
-AgentRepr = namedtuple("AgentRepr", "name location orientation holding message")
+
+AgentRepr = namedtuple("AgentRepr", "name location action orientation holding message")
 
 # Colors for agents.
 COLORS = ['white', 'blue', 'magenta', 'yellow', 'green']
@@ -111,12 +114,18 @@ class RealAgent:
             return 'None'
         return self.holding.full_name
 
+    def set_orientation(self, obs):
+        sim_agent = list(filter(lambda x: x.name == self.name, obs.sim_agents))[0]
+        self.orientation = sim_agent.orientation
+
     def init_action(self, obs):
         #print("obs in agent: ", obs)
         sim_agent = list(filter(lambda x: x.name == self.name, obs.sim_agents))[0]
         self.location = sim_agent.location
         self.holding = sim_agent.holding
         self.action = sim_agent.action
+        self.orientation = sim_agent.orientation
+        
             
     def select_action(self, obs, qtable, statedict, epsilon, episode, use_shield, shield_eps):
         """Return best next action for this agent given observations."""
@@ -135,6 +144,8 @@ class RealAgent:
                 action = self.plan(copy.copy(obs),copy.copy(qtable), statedict, use_shield=True)
             else:
                 action = self.plan(copy.copy(obs),copy.copy(qtable), statedict)
+
+            
         else:
             '''
             Here we pick a random action for exploration
@@ -151,13 +162,33 @@ class RealAgent:
             Here we start the shielding if we use shielding.
 
             '''
+
+            incorrect = True
+
             if use_shield and episode >= shield_eps:
                 for shieldName in self.shields:
-                    if obs.start_shielding and shieldName.rep == 'AlwaysNot':
+                    if obs.start_shielding and shieldName.rep == 'AlwaysNot' and not incorrect:
                         shield__, qtable = shieldName._get_shield(env_=obs_, state=statedict[copy.copy(cur_state_encoded)], qtable=qtable)
                         #print("shield: ", shield__)
                         print("---done getting NOT shield: {}---".format(shield__))
                         action = shieldName.apply_shield(action, shield__, obs_, self.NAV_ACTIONS)
+                    # elif obs.start_shielding and shieldName.rep == 'AlwaysNot' and incorrect:
+                        
+                    #     print("agent location before incorrect shield: ", self.location)
+                    #     action_x, action_y = obs.world.inbounds(tuple(np.asarray(self.location) + np.asarray(self.action)))
+                    #     gs = obs.world.get_gridsquare_at((action_x, action_y))
+
+                    #     if isinstance(gs, Carpet):
+                    #         # move down, right, up
+                    #         for action in [(0, 1), (1, 0), (0, -1)]:
+                    #             action_x, action_y = obs.world.inbounds(tuple(np.asarray(self.location) + np.asarray(self.action)))
+                    #             gs = obs.world.get_gridsquare_at((action_x, action_y))
+                    #             print("Gs: ", gs)
+                    #             if isinstance(gs, Floor) or isinstance(gs, Carpet):
+                    #                 self.move_to(gs.location)
+                    #         print("The agent location after incorrect shield: ", self.location)    
+                    #         quit()
+
                     # if obs.start_merging and shieldName.rep == 'AlternativeAction':
                     #     shield = shieldName._get_shield(env_=obs__, state=statedict[copy.copy(cur_state_encoded)], qtable=qtable)
                     #     print("---done getting shield tomato: {}---".format(shield))
@@ -191,6 +222,7 @@ class SimAgent:
         self.location = location
         self.holding = None
         self.action = (0, 0)
+        
         self.has_delivered = False
         self.shieldnames = shieldnames
         self.shields = []
@@ -242,7 +274,7 @@ class SimAgent:
         return a
 
     def get_repr(self):
-        return AgentRepr(name=self.name, location=self.location, orientation=self.orientation, holding=self.get_holding(), message=self.message)
+        return AgentRepr(name=self.name, location=self.location, action=self.action, orientation=self.orientation, holding=self.get_holding(), message=self.message)
 
 
     def get_holding(self):
@@ -280,3 +312,5 @@ class SimAgent:
         self.location = new_location
         if self.holding is not None:
             self.holding.location = new_location
+
+    

@@ -254,6 +254,8 @@ def main_loop(arglist):
 
             print("qtable: ", qtable)
             print("\n\n")
+            # print("state: ", StateDict)
+            # quit()
             max_idx = StateDict[list(StateDict.keys())[-1]]
             decay_rate = 0.05
 
@@ -283,6 +285,7 @@ def main_loop(arglist):
 
                 # print("state: ", state)
 
+
                 if state not in StateDict:
                     print("Adding state {}".format(state))
                     StateDict[state] = max_idx
@@ -290,6 +293,7 @@ def main_loop(arglist):
 
                 for agent in real_agents:
                     agent.init_action(obs=obs)
+                    print("qtable:" , qtable[StateDict[state],:])
                     action = agent.select_action(obs=copy.copy(obs), qtable=qtable, statedict=StateDict, epsilon=epsilon, episode=episode, use_shield=arglist.shield, shield_eps=arglist.num_episodes_shield)
                     if action is not None:
                         action_dict[agent.name] = action
@@ -300,12 +304,89 @@ def main_loop(arglist):
                 
                 old_q = qtable[StateDict[state], action]
 
+                # what i could do here is return a var saying that i need to apply the salad shield thingie
+                # then basically go through the actions, turn turn fetch, turn turn fetch.
+                # and update the q-values
+                # ics = incorrect shield
                 new_obs, reward, _, info = env.step(action_dict=action_dict, episode=episode)
 
-                
-                # update Q-values
+                # print("Qtable for fetching init: ", qtable[StateDict[(4, (0, 1, 1, 0), (1, 1, 0))]])
 
+                # if 'tomato' in arglist.level and ics:
+
+                #     # update the fetch tomato slice thingie
+                #     # # without actually changing state
+                #     # for agent in real_agents:
+                #     #     print("Agent: ", action_dict)
+                #     #     action = action_dict[agent.name]
+                #     #     new_state_fetchslice = new_obs.encode()
+                        
+                #     #     if new_state_fetchslice not in StateDict:
+                #     #         StateDict[new_state_fetchslice] = max_idx
+                #     #         max_idx += 1
+                        
+                #     #     #new_state = int(new_obs_encoded, 2)
+
+                #     #     qtable[StateDict[state], action] = qtable[StateDict[state], action] + arglist.lr * (reward + arglist.gamma * np.max(qtable[StateDict[new_state_fetchslice], :]) - qtable[StateDict[state], action])
+                    
+                #     # print("Qtable for fetching after try: ", qtable[StateDict[(4, (0, 1, 1, 0), (1, 1, 0))]])
+                #     # quit()
+                #     print("ics: ", ics)
+                #     print("==we execute incorrect shield: fetch plate, fetch tomato slice")
+                #     print("\n\n")
+                    # NAV_ACTIONS = [(-1, 0), (1, 0), "FETCH", "CHOP", "DELIVER"]#, (0, 0)]
+                    
+                    # while not env.done:
+                    #     #plate on shelf
+                    #     if state[1][2] == 0:
+                    #         action_sequence = [1, 1, 2, 1, 2]                
+                    #     else:
+                    #         #plate not on shelf, so fetch plate fails we stay in orientation 6
+                    #         action_sequence = [1, 1, 2, 0, 0, 2]
+
+                    #     #[0.40717289 0.26438105 0.76       0.56557655 0.50394311
+                    #     for action in action_sequence:
+                    #         if env.done:
+                    #             break
+                    #         action_dict = {}
+                    #         state = obs.encode()
+                    #         print("STATE: ", state)
+                    #         if state not in StateDict:
+                    #             # print("Adding state {}".format(state))
+                    #             StateDict[state] = max_idx
+                    #             max_idx += 1 
+                    #         old_q = qtable[StateDict[state], action]
+                    #         for agent in real_agents:
+                    #             action_dict[agent.name] = action
+                    #             agent.set_orientation(obs=obs)
+                    #             # print("agent orientation: ", agent.orientation)
+                    #             new_obs, reward, _, info, ics = env.step(action_dict=action_dict, episode=episode)
+
+                    #             # if state == (4, (0, 1, 0, 0), (1, 1, 0)):
+                    #             #     print("hello in this state")
+                    #             #     reward = -10
+                    #             # print("Agent: ", action_dict)
+                    #             # action = action_dict[agent.name]
+                    #             new_state = new_obs.encode()
+                                
+                    #             if new_state not in StateDict:
+                    #                 StateDict[new_state] = max_idx
+                    #                 max_idx += 1
+                                
+                    #             qtable[StateDict[state], action] = qtable[StateDict[state], action] + arglist.lr * (reward + arglist.gamma * np.max(qtable[StateDict[new_state], :]) - qtable[StateDict[state], action])
+                    #             #print("QTABLE : ", qtable[StateDict[(4, (0, 1, 1, 0), (1, 1, 0))], 2])
+                    #         obs = new_obs
+                    #         print(env.termination_info)
+                    #         if state == (4, (0, 1, 1, 0), (1, 1, 0)) or state == (4, (0, 1, 0, 0), (1, 1, 0)):
+                    #             print("Qtable for fetching slice: ", qtable[StateDict[(4, (0, 1, 1, 0), (1, 1, 0))]])
+                    #             print("Qtable for fetching slice plate: ", qtable[StateDict[(4, (0, 1, 0, 0), (1, 1, 0))]])
+                    #         # epsilon = min_epsilon + (max_epsilon - min_epsilon)* np.exp(-decay_rate*episode)
+
+                
+                # update Q-values if not correcting
+                # if not ics:
                 for agent in real_agents:
+                    print("Agent: ", action_dict)
                     action = action_dict[agent.name]
                     new_state = new_obs.encode()
                     
@@ -314,20 +395,26 @@ def main_loop(arglist):
                         max_idx += 1
                     
                     #new_state = int(new_obs_encoded, 2)
+                    print("UPDATE QTABLE FOR STATE: ", state)
+                    print("action: ", action)
+                    print("q before: ", qtable[StateDict[state], :])
 
                     qtable[StateDict[state], action] = qtable[StateDict[state], action] + arglist.lr * (reward + arglist.gamma * np.max(qtable[StateDict[new_state], :]) - qtable[StateDict[state], action])
+                    print("q after: " , qtable[StateDict[state], :])
 
+                    print("q after: " , qtable[StateDict[state], action])
 
                 delta = max(delta, abs(old_q-qtable[StateDict[state], action]))
 
                 obs = new_obs
 
-                # print("JA: ", "(qtable[StateDict[new_state],:]: ", qtable[StateDict[new_state],:])
-                # print("max id: ", max_idx)
-
                 total_reward += reward
+
                 # Saving info
                 # we add the reward for each time step, the agent information, and episode
+                
+                for agent in real_agents:
+                    env.NAV_ACTIONS[action_dict[agent.name]]
                 bag.add_status(run="run_"+str(run), cur_time=info['t'], reward=reward, real_agents=real_agents, episode=episode)
 
             
@@ -347,6 +434,7 @@ def main_loop(arglist):
 
             
             print("===total reward of episode %d %f === " % (episode, total_reward))
+
             # if env.successful:
             #     quit()
             #print("QTABLE: \n")

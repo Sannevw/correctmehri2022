@@ -6,10 +6,12 @@ Code adapted from: [original repository](https://github.com/rosewang2008/gym-coo
 
 BibTeX reference:
 ```
-@article{addRef,
-  title={addTitle},
-  author={addAuthor},
-  year={addYear}
+@inproceedings{vanwaveren2022correct,
+  title={Correct Me If {I’m} Wrong: Using Non-Experts to Repair Reinforcement Learning Policies},
+  author={van Waveren, Sanne and Pek, Christian and Tumova, Jana and Leite, Iolanda},
+  booktitle={Proc. of the 2022 ACM/IEEE Int. Conf. on Human-Robot Interaction},
+  pages={},
+  year={2022}
 }
 ```
 

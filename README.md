@@ -1,10 +1,8 @@
-# Code for "Correct Me If I’m Wrong: Using Non-Experts to Repair High-Level Reinforcement Learning Policies"
+# Code for HRI 2022 paper "Correct Me If I’m Wrong: Using Non-Experts to Repair High-Level Reinforcement Learning Policies"
 
-A modified version of the code from ["Too many cooks: Bayesian inference for coordinating multi-agent collaboration"](https://arxiv.org/pdf/2003.11778.pdf).
+A modified version of the code from ["Too many cooks: Bayesian inference for coordinating multi-agent collaboration"](https://arxiv.org/pdf/2003.11778.pdf), code for that publication is available here: [original repository](https://github.com/rosewang2008/gym-cooking)
 
-Code adapted from: [original repository](https://github.com/rosewang2008/gym-cooking)
-
-BibTeX reference:
+BibTeX reference for the HRI 2022 paper:
 ```
 @inproceedings{vanwaveren2022correct,
   title={Correct Me If {I’m} Wrong: Using Non-Experts to Repair Reinforcement Learning Policies},
